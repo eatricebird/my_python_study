@@ -11,11 +11,12 @@ from my_package.excel.excel_rw import *
 # 满足筛选要求的，立即停止筛选，输出基金名称，否则继续把前1年排名放宽到前1/5,
 # 然后再看有没有基金出现在新的这3个排名表中，如果出现，就是满足筛选要求的，立
 # 即停止筛选, 以此类推. 伪代码如下:
-# for n3 in [3年前1/10, 3年前1/5, 3年前1/3, 3年前1/2]:
-#    for n2 in [3年前1/10, 3年前1/5, 3年前1/3, 3年前1/2]:
-#        for n1 in [3年前1/10, 3年前1/5, 3年前1/3, 3年前1/2]:
-#            if (n3 & n2 & n1) != None:
-#                break;
+# for n4 in [3年前1/10, 3年前1/5, 3年前1/3, 3年前1/2]:
+#    for n3 in [2年前1/10, 2年前1/5, 2年前1/3, 2年前1/2]:
+#        for n2 in [1年前1/10, 1年前1/5, 1年前1/3, 1年前1/2]:
+#           for n1 in [半年前1/10, 半年前1/5, 半年前1/3, 半年前1/2]:
+#              if (n3 & n2 & n1 & n4) != None:
+#                 break;
 #
 # usage:
 # find_best_stock.py 股票型_3y.xls
@@ -56,14 +57,17 @@ def find_best(intersection, it):
         else:
             find_best(intersection_new, it)
 
-file = sys.argv[1]
-# 依次是'3年回报', '2年回报', '1年回报', '半年回报' 所在列数
-return_rate_col = (10, 9, 8, 7, 6)
-# 依次是'5年回报','3年回报', '2年回报', '1年回报', '半年回报' 所在列数
-# return_rate_col = (11, 10, 9, 8, 7, 6)
-
+file = sys.argv[2]
+year = sys.argv[1]
+if year == '3':        
+    return_rate_col = (10, 9, 8, 7, 6, 5) # 依次是'3年回报', '2年回报', '1年回报', '半年回报','3个月回报','1个月回报' 所在列数,从0开始
+elif year == '5':
+    return_rate_col = (11, 10, 9, 8, 7, 6, 5) # 依次是'5年回报','3年回报', '2年回报', '1年回报', '半年回报','3个月回报','1个月回报' 所在列数
+else:
+    sys.exit(0)	
 # 某年回报率前1/10, 1/5, 1/3, 1/2
-topn = (10, 5, 3, 2)
+# topn = (10, 5, 3, 2)
+topn = (10, 5)
 # names = read_col(file, title['基金名称'])
 funds_pool = []
 # 读取'基金名称'列
@@ -75,7 +79,7 @@ for rt in return_rate_col:
     # print(returns_rate)
     # funds = {'诺安上证新兴产业ETF':11.7, '国联安上证商品ETF联接':23.9}
     funds = dict(zip(names, returns_rate))
-    # print(funds)
+    # print(funds.items())
     funds_sorted = sorted(funds.items(), key=lambda item:item[1], reverse=True)
     # print(funds_sorted)
     funds_name_sorted = []

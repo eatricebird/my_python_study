@@ -19,7 +19,7 @@ from my_package.excel.excel_rw import *
 #                 break;
 #
 # usage:
-# find_best_stock.py 股票型_3y.xls
+# find_best_stock.py 3 股票型业绩_3y.xls 股票型规模.xls
 # 其中，股票型_3y.xls 晨星网上按3年业绩排序的股票基金列表，注意只复制下来有3年业绩的，然后粘贴到excel表格中.
 # 如果要筛选其他类型，只需要在晨星网上选其他类型基金来排序即可.
 # 执行后,屏幕输出筛选结果.
@@ -28,11 +28,11 @@ from my_package.excel.excel_rw import *
 # usage find_best_stock.py 股票型_5y.xls
 # 其中，股票型_5y.xls 晨星网上按3年业绩排序的股票基金列表，注意只复制下来有5年业绩的，然后粘贴到excel表格中
 
-
-def read_col(file: str, col: int) -> [str]:
+# 读取file中，第col列， 并且从第start_row开始读取
+def read_col(file: str, col: int, start_row:int) -> [str]:
     reader = ExcelReader()
     reader.open(file, 0)
-    reader.seek(3)
+    reader.seek(start_row)
     return reader.read_col(col)
 
 
@@ -58,30 +58,48 @@ def find_best(intersection, it):
             find_best(intersection_new, it)
 
 file = sys.argv[2]
+funds_scale_file = sys.argv[3]
 year = sys.argv[1]
 if year == '3':        
-    return_rate_col = (10, 9, 8) # 依次是'3年回报', '2年回报', '1年回报', '半年回报','3个月回报','1个月回报' 所在列数,从0开始
+    return_rate_col = (10, 9, 8, 7, 6) # 依次是'3年回报', '2年回报', '1年回报', '半年回报','3个月回报','1个月回报' 所在列数,从0开始
 elif year == '5':
     return_rate_col = (11, 10, 9, 8) # 依次是'5年回报','3年回报', '2年回报', '1年回报', '半年回报','3个月回报','1个月回报' 所在列数
 else:
     sys.exit(0)	
 # 某年回报率前1/10, 1/5, 1/3, 1/2
 # topn = [10, 5, 3, 2]
-topn = [4]
-# names = read_col(file, title['基金名称'])
+topn = [5]
 funds_pool = []
-# 读取'基金名称'列
+# 从基金业绩表格中读取'基金名称'列
 # names = ['诺安上证新兴产业ETF','国联安上证商品ETF联接',....]
-names = read_col(file, 2)
+names = read_col(file, 2, 3)
+
+# 从基金规模表格，第8列中读取基金规模（列从0开始计数）
+scale_value = read_col(funds_scale_file, 8, 2)
+# 从基金规模表格，第2列中读取基金名字（列从0开始计数）
+scale_name = read_col(funds_scale_file, 2, 2)
+
+# 遍历基金规模，选择规模在18亿～82亿之间的
+appropriate_scale_names = []
+# scale_bottom = 18.0
+# scale_top = 89.0
+scale_bottom = 0.0
+scale_top = 1000.0
+for i in range(len(scale_value)):
+    if scale_value[i] > scale_bottom and scale_value[i] < scale_top:
+	    appropriate_scale_names.append(scale_name[i])
+
+# print	(appropriate_scale_names)
 for rt in return_rate_col:
     # returns_rate = [11.7, 23.9, ....]
-    returns_rate = read_col(file, rt)
+    returns_rate = read_col(file, rt, 3)
     # print(returns_rate)
     # funds = {'诺安上证新兴产业ETF':11.7, '国联安上证商品ETF联接':23.9}
     funds = dict(zip(names, returns_rate))
-    # print(funds.items())
+    funds = {k:v for k,v in funds.items() if k in appropriate_scale_names}
+    # print(funds)
     funds_sorted = sorted(funds.items(), key=lambda item:item[1], reverse=True)
-    # print(funds_sorted)
+    # print(len(funds_sorted), funds_sorted)
     funds_name_sorted = []
     for i in range(len(funds_sorted)):
         # funds_name_sorted =
